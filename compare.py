@@ -5,7 +5,8 @@
   plots on two groups of data
   
   Tries to "intelligently" handle regions of nan.
-     
+------------
+Borrows code snippets from numerous sources on Internet
 ------------------------------------------------------------------------
 """
 import glob
@@ -159,7 +160,10 @@ class Compare:
         
         sigma_mus_A = np.sqrt(A.var(ddof=1))/len(A)
         p_mus_A = stats.t.pdf(mus, loc=A.mean(), scale=np.sqrt(sigma_mus_A), df = len(A)-1)
-        plt.figure(figsize=(10,10))
+        
+        fig = plt.figure(figsize=(10,10))
+        st = fig.suptitle(self.label + ' - Welch\'s approximate t likelihood', fontsize="x-large")        
+
         plt.subplot(311)
         plt.plot(mus, p_mus_A, color='b')
         plt.title('P(mu_A| sampleA)')
@@ -172,18 +176,19 @@ class Compare:
         HDI = [HDI_low, HDI_high]
         plt.plot( HDI, [0,0],lw=5.0, color='k')
         
-        plt.text( HDI[0], 0.04, '%.3g'%HDI[0],
+        plt.text( HDI[0], 0.05, '%.3g'%HDI[0],
                   horizontalalignment='center',
                   verticalalignment='bottom',
                   )
-        plt.text( HDI[1], 0.04, '%.3g'%HDI[1],
+        plt.text( HDI[1], 0.05, '%.3g'%HDI[1],
                   horizontalalignment='center',
                   verticalalignment='bottom',
                   )
-        plt.text( sum(HDI)/2, 0.14, '95% HDI',
+        plt.text( sum(HDI)/2, 0.3, '95% HDI',
                   horizontalalignment='center',
                   verticalalignment='bottom',
                   )
+
         #-------
         
         plt.subplot(312)
@@ -200,19 +205,19 @@ class Compare:
         HDI = [HDI_low, HDI_high]
         plt.plot( HDI, [0,0],lw=5.0, color='k')
         
-        plt.text( HDI[0], 0.04, '%.3g'%HDI[0],
+        plt.text( HDI[0], 0.05, '%.3g'%HDI[0],
                   horizontalalignment='center',
                   verticalalignment='bottom',
                   )
-        plt.text( HDI[1], 0.04, '%.3g'%HDI[1],
+        plt.text( HDI[1], 0.05, '%.3g'%HDI[1],
                   horizontalalignment='center',
                   verticalalignment='bottom',
                   )
-        plt.text( sum(HDI)/2, 0.24, '95% HDI',
+        plt.text( sum(HDI)/2, 0.3, '95% HDI',
                   horizontalalignment='center',
                   verticalalignment='bottom',
                   )
-        
+
         #---------------
         plt.subplot(313)
         mu_diff = A.mean()-B.mean()
@@ -236,20 +241,22 @@ class Compare:
         HDI = [HDI_low, HDI_high]
         plt.plot( HDI, [0,0],lw=5.0, color='k')
         
-        plt.text( HDI[0], 0.04, '%.3g'%HDI[0],
+        plt.text( HDI[0], 0.05, '%.3g'%HDI[0],
                   horizontalalignment='center',
                   verticalalignment='bottom',
                   )
-        plt.text( HDI[1], 0.04, '%.3g'%HDI[1],
+        plt.text( HDI[1], 0.05, '%.3g'%HDI[1],
                   horizontalalignment='center',
                   verticalalignment='bottom',
                   )
-        plt.text( sum(HDI)/2, 0.24, '95% HDI',
+        plt.text( sum(HDI)/2, 0.2, '95% HDI',
                   horizontalalignment='center',
                   verticalalignment='bottom',
                   )
         
         plt.tight_layout(pad=1, w_pad=1, h_pad=1.0)
+        st.set_y(0.95)
+        fig.subplots_adjust(top=0.85)        
         #plt.show()
 
     #-------------------------------
@@ -278,6 +285,7 @@ class Compare:
         slope, intercept = np.linalg.lstsq(A_mat, sort_B[:n_min])[0]
         plt.plot(sort_A,sort_A*slope + intercept, 'r', linewidth=1)
         #plt.show()        
+        
 
 #------------------------------------------------------------------------
 def example():
