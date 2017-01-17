@@ -37,15 +37,15 @@ class Compare:
     """
     
     #-------------------------------
-    def __init__(self, X_, Y_, label_='data', x_label_='X', y_label_='Y'):
-        self.X = np.array(X_)
-        self.Y = np.array(Y_)
-        self.x_label = x_label_
-        self.y_label = y_label_
-        self.label = label_
+    def __init__(s, X_, Y_, label_='data', x_label_='X', y_label_='Y'):
+        s.X = np.array(X_)
+        s.Y = np.array(Y_)
+        s.x_label = x_label_
+        s.y_label = y_label_
+        s.label = label_
         
     #-------------------------------
-    def plot_hists(self):
+    def plot_hists(s):
         """ plot histograms of data
         """
         # VIEW DATA
@@ -56,8 +56,8 @@ class Compare:
         #%matplotlib inline
         
         np.random.seed(7)
-        A = self.X
-        B = self.Y
+        A = s.X
+        B = s.Y
         C = np.concatenate((A,B)) # Combined = groups A and B
         
         # fit a normal curve to each set
@@ -78,9 +78,9 @@ class Compare:
         # 'best fit' line
         y = stats.norm.pdf(bins_C, mu_C, sigma_C)
         l = plt.plot(bins_C, y, 'r--', linewidth=2, label='norm fit')
-        plt.title('pooled ' + self.label + ' Histogram')
+        plt.title('pooled ' + s.label + ' Histogram')
         plt.ylabel('frequency')
-        plt.xlabel(self.label + ' value')
+        plt.xlabel(s.label + ' value')
         plt.legend()
         
         # add a kde line
@@ -99,9 +99,9 @@ class Compare:
         y = stats.norm.pdf(bins_C, mu_A, sigma_A)
         l = plt.plot(bins_C, y, 'r--', linewidth=2, label='norm fit')
         
-        plt.title(self.x_label + ' ' + self.label + ' Histogram')
+        plt.title(s.x_label + ' ' + s.label + ' Histogram')
         plt.ylabel('frequency')
-        plt.xlabel(self.label + ' value')
+        plt.xlabel(s.label + ' value')
         plt.legend()
         
         #---------------------
@@ -114,18 +114,18 @@ class Compare:
         y = stats.norm.pdf(bins_C, mu_B, sigma_B)
         l = plt.plot(bins_C, y, 'r--', linewidth=2, label='norm fit')
         
-        plt.title(self.y_label + ' ' + self.label + ' Histogram')
+        plt.title(s.y_label + ' ' + s.label + ' Histogram')
         plt.ylabel('frequency')
-        plt.xlabel(self.label + ' value')
+        plt.xlabel(s.label + ' value')
         plt.legend()
         
         #---------------------
         # boxplots
         plt.subplot(5,1,4)
         plt.boxplot([B,A], 0, 'rs', 0)
-        plt.yticks([1, 2], [self.y_label, self.x_label])
-        plt.title('Boxplot of ' + self.label )
-        plt.xlabel(self.label + ' value')
+        plt.yticks([1, 2], [s.y_label, s.x_label])
+        plt.title('Boxplot of ' + s.label )
+        plt.xlabel(s.label + ' value')
         plt.grid(b=True)
         
         #---------------------
@@ -135,34 +135,34 @@ class Compare:
         plt.grid(1)
         
         plt.scatter(B, np.zeros_like(B), marker='.', color='g')
-        plt.yticks([0, 1], [self.y_label, self.x_label])
-        plt.title('1-D Scatter of ' + self.label)
-        plt.xlabel(self.label + ' value')
+        plt.yticks([0, 1], [s.y_label, s.x_label])
+        plt.title('1-D Scatter of ' + s.label)
+        plt.xlabel(s.label + ' value')
         
         plt.tight_layout(pad=1, w_pad=1, h_pad=1.0)
         #plt.show()
        
     #-------------------------------
-    def plot_t_likelihood(self):
+    def plot_t_likelihood(s):
         """ Using analytical formulas for Gaussian assumptions (Welch's
         approximate t), plot likelihood of sample means.
         
         High Density Intervals (HDI) are also shown for 95% region.
         """
         
-        A = self.X
-        B = self.Y
+        A = s.X
+        B = s.Y
         
         # we only consider mus in the middle histogram range
-        mu_min = np.amin(np.concatenate((self.X, self.Y)))
-        mu_max = np.amax(np.concatenate((self.X, self.Y)))
+        mu_min = np.amin(np.concatenate((s.X, s.Y)))
+        mu_max = np.amax(np.concatenate((s.X, s.Y)))
         mus = np.linspace(mu_min, mu_max, 200)
         
         sigma_mus_A = np.sqrt(A.var(ddof=1))/len(A)
         p_mus_A = stats.t.pdf(mus, loc=A.mean(), scale=np.sqrt(sigma_mus_A), df = len(A)-1)
         
         fig = plt.figure(figsize=(10,10))
-        st = fig.suptitle(self.label + ' - Welch\'s approximate t likelihood', fontsize="x-large")        
+        st = fig.suptitle(s.label + ' - Welch\'s approximate t likelihood', fontsize="x-large")        
 
         plt.subplot(311)
         plt.plot(mus, p_mus_A, color='b')
@@ -260,23 +260,23 @@ class Compare:
         #plt.show()
 
     #-------------------------------
-    def plot_qq(self):
+    def plot_qq(s):
         """ the sizes of each group should be about the same. Does not use 
         true quantiles, instead uses sorting and plots on a one to one basis. 
         Should probably replace one to one with binning of some sort when 
         sample sizes are different."""
 
         plt.figure()
-        sort_A = self.X.copy()
+        sort_A = s.X.copy()
         sort_A.sort()
-        sort_B = self.X.copy()
+        sort_B = s.X.copy()
         sort_B.sort()
         # TODO rethink n_min
         n_min = np.minimum(len(sort_A),len(sort_B))
         plt.scatter(sort_A[:n_min], sort_B[:n_min], color='g')
-        plt.title('QQ plot - ' + self.x_label + ' to ' + self.y_label)
-        plt.xlabel(self.x_label + ' quantiles')
-        plt.ylabel(self.y_label + ' quantiles')
+        plt.title('QQ plot - ' + s.x_label + ' to ' + s.y_label)
+        plt.xlabel(s.x_label + ' quantiles')
+        plt.ylabel(s.y_label + ' quantiles')
         plt.grid()
         
         
@@ -286,6 +286,27 @@ class Compare:
         plt.plot(sort_A,sort_A*slope + intercept, 'r', linewidth=1)
         #plt.show()        
         
+    #-------------------------------
+    def calc_stats(s, print_=False):
+        """ returns averages, t-test_p, Mann-Whitney test_p, Cohens_d """
+        
+        t,t_test_p = stats.ttest_ind(s.X, s.Y, axis=0, equal_var=False)
+        mw,mw_p = stats.mannwhitneyu(s.X, s.Y)
+        
+        n_tot = len(s.X) + len(s.Y)
+        x_var = s.X.var(ddof=0)
+        y_var = s.Y.var(ddof=0)
+        pooled_var = (len(s.X)*x_var + len(s.Y)*y_var) / n_tot
+        cohens_d = (s.X.mean() - s.Y.mean()) / np.sqrt(pooled_var)
+
+        if(print_):
+            print(s.x_label + ' ave: ', s.X.mean())
+            print(s.y_label + ' ave: ', s.Y.mean())
+            print('t-test p_value: ',t_test_p)
+            print('mw-test p_value: ',mw_p)
+            print('Cohens d: ', cohens_d)        
+
+        return s.X.mean(), s.Y.mean(), t_test_p, mw_p, cohens_d
 
 #------------------------------------------------------------------------
 def example():
@@ -299,6 +320,7 @@ def example():
     compare.plot_hists()
     compare.plot_qq()
     compare.plot_t_likelihood()
+    compare.calc_stats(print_=True)
     plt.show()
 
 #=============================================================================
