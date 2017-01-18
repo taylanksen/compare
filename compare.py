@@ -48,6 +48,7 @@ class Compare:
     def plot_all(s,fig_=None, fname_=None):
         """ plot histograms of data
         """
+        BINS_N = 10
 
 
         A = s.X
@@ -71,7 +72,7 @@ class Compare:
         ax1 = fig.add_subplot(621)
         
         #histogram - pooled
-        n_C, bins_C, patches_C = plt.hist(C, bins=15, normed=1, facecolor='gray', alpha=0.75)
+        n_C, bins_C, patches_C = plt.hist(C, bins=BINS_N, normed=1, facecolor='gray', alpha=0.75)
         
         # 'best fit' line
         y = stats.norm.pdf(bins_C, mu_C, sigma_C)
@@ -91,7 +92,7 @@ class Compare:
         #sample A
         plt.subplot(623, sharex=ax1, sharey=ax1)
         # histogram
-        n, bins, patches = plt.hist(A, bins=15, normed=1, facecolor='blue', alpha=0.75)
+        n, bins, patches = plt.hist(A, bins=BINS_N, normed=1, facecolor='blue', alpha=0.75)
         
         # 'best fit' line
         y = stats.norm.pdf(bins_C, mu_A, sigma_A)
@@ -106,7 +107,7 @@ class Compare:
         #sample B
         plt.subplot(625, sharex=ax1, sharey=ax1)
         # histogram
-        n, bins, patches = plt.hist(B, bins=15, normed=1, facecolor='green', alpha=0.75)
+        n, bins, patches = plt.hist(B, bins=BINS_N, normed=1, facecolor='green', alpha=0.75)
         
         # 'best fit' line
         y = stats.norm.pdf(bins_C, mu_B, sigma_B)
@@ -170,20 +171,27 @@ class Compare:
         mu_max = np.amax(np.concatenate((s.X, s.Y)))
         mus = np.linspace(mu_min, mu_max, 200)
         
-        sigma_mus_A = np.sqrt(A.var(ddof=1))/len(A)
-        p_mus_A = stats.t.pdf(mus, loc=A.mean(), scale=np.sqrt(sigma_mus_A), df = len(A)-1)
         
-        #fig = plt.figure(figsize=(10,10))
-        #st = fig.suptitle(s.label + ' - Welch\'s approximate t likelihood', fontsize="x-large")        
-
-        ax1_.plot(mus, p_mus_A, color='b')
-        ax1_.set_title('P(' + s.x_label + '$\mu$ - | data)')
+        #---------------
+        #PLOT SAMPLE DIFFERENCES
+        mu_diff = A.mean()-B.mean()
+        
+        df_diff_num = ( A.var(ddof=1)/len(A) + B.var(ddof=1)/len(B) )**2
+        df_diff_den = ( (A.var(ddof=1)/len(A))**2/(len(A)-1) + 
+                        (B.var(ddof=1)/len(B))**2/(len(B)-1) )
+        df_diff = np.floor(df_diff_num/df_diff_den)
+        
+        sigma_diff = A.var(ddof=1)/len(A) + B.var(ddof=1)/len(B)
+        
+        p_mus_diff = stats.t.pdf(mus, loc=(mu_diff), scale=np.sqrt(sigma_diff), df=df_diff)
+        ax1_.plot(mus, p_mus_diff, color='r')
+        ax1_.set_title('P(' + s.x_label + '$\mu$ - ' + s.y_label + '$\mu$| all data)')
         ax1_.set_xlabel('mu')
         ax1_.grid(1)
         
         # add the HDI
-        HDI_low = stats.t.ppf(.025, loc=A.mean(), scale=np.sqrt(sigma_mus_A), df=len(A)-1)
-        HDI_high = stats.t.ppf(.975, loc=A.mean(), scale=np.sqrt(sigma_mus_A), df=len(A)-1)
+        HDI_low = stats.t.ppf(.025, loc=(mu_diff), scale=np.sqrt(sigma_diff), df=df_diff)
+        HDI_high = stats.t.ppf(.975, loc=(mu_diff), scale=np.sqrt(sigma_diff), df=df_diff)
         HDI = [HDI_low, HDI_high]
         ax1_.plot( HDI, [0,0],lw=5.0, color='k')
         
@@ -199,20 +207,24 @@ class Compare:
                   horizontalalignment='center',
                   verticalalignment='bottom',
                   )
-
-        #-------
         
-        #plt.subplot(312)
-        sigma_mus_B = np.sqrt(B.var(ddof=1))/len(B)
-        p_mus_B = stats.t.pdf(mus, loc=B.mean(), scale=np.sqrt(sigma_mus_B), df=len(B)-1)
-        ax2_.plot(mus, p_mus_B, color='g')
-        ax2_.set_title('P(' + s.y_label + '$\mu$ - | data)')
+        
+        #---------------
+        # PLOT A
+        sigma_mus_A = np.sqrt(A.var(ddof=1))/len(A)
+        p_mus_A = stats.t.pdf(mus, loc=A.mean(), scale=np.sqrt(sigma_mus_A), df = len(A)-1)
+        
+        #fig = plt.figure(figsize=(10,10))
+        #st = fig.suptitle(s.label + ' - Welch\'s approximate t likelihood', fontsize="x-large")        
+
+        ax2_.plot(mus, p_mus_A, color='b')
+        ax2_.set_title('P(' + s.x_label + '$\mu$ - | data)')
         ax2_.set_xlabel('mu')
         ax2_.grid(1)
         
         # add the HDI
-        HDI_low = stats.t.ppf(.025, loc=B.mean(), scale=np.sqrt(sigma_mus_B),df=len(B)-1)
-        HDI_high = stats.t.ppf(.975, loc=B.mean(), scale=np.sqrt(sigma_mus_B),df=len(B)-1)
+        HDI_low = stats.t.ppf(.025, loc=A.mean(), scale=np.sqrt(sigma_mus_A), df=len(A)-1)
+        HDI_high = stats.t.ppf(.975, loc=A.mean(), scale=np.sqrt(sigma_mus_A), df=len(A)-1)
         HDI = [HDI_low, HDI_high]
         ax2_.plot( HDI, [0,0],lw=5.0, color='k')
         
@@ -229,26 +241,19 @@ class Compare:
                   verticalalignment='bottom',
                   )
 
-        #---------------
-        #plt.subplot(313)
-        mu_diff = A.mean()-B.mean()
+        #-------
         
-        df_diff_num = ( A.var(ddof=1)/len(A) + B.var(ddof=1)/len(B) )**2
-        df_diff_den = ( (A.var(ddof=1)/len(A))**2/(len(A)-1) + 
-                        (B.var(ddof=1)/len(B))**2/(len(B)-1) )
-        df_diff = np.floor(df_diff_num/df_diff_den)
-        
-        sigma_diff = A.var(ddof=1)/len(A) + B.var(ddof=1)/len(B)
-        
-        p_mus_diff = stats.t.pdf(mus, loc=(mu_diff), scale=np.sqrt(sigma_diff), df=df_diff)
-        ax3_.plot(mus, p_mus_diff, color='r')
-        ax3_.set_title('P(' + s.x_label + '$\mu$ - ' + s.y_label + '$\mu$| all data)')
+        #PLOT B
+        sigma_mus_B = np.sqrt(B.var(ddof=1))/len(B)
+        p_mus_B = stats.t.pdf(mus, loc=B.mean(), scale=np.sqrt(sigma_mus_B), df=len(B)-1)
+        ax3_.plot(mus, p_mus_B, color='g')
+        ax3_.set_title('P(' + s.y_label + '$\mu$ - | data)')
         ax3_.set_xlabel('mu')
         ax3_.grid(1)
         
         # add the HDI
-        HDI_low = stats.t.ppf(.025, loc=(mu_diff), scale=np.sqrt(sigma_diff), df=df_diff)
-        HDI_high = stats.t.ppf(.975, loc=(mu_diff), scale=np.sqrt(sigma_diff), df=df_diff)
+        HDI_low = stats.t.ppf(.025, loc=B.mean(), scale=np.sqrt(sigma_mus_B),df=len(B)-1)
+        HDI_high = stats.t.ppf(.975, loc=B.mean(), scale=np.sqrt(sigma_mus_B),df=len(B)-1)
         HDI = [HDI_low, HDI_high]
         ax3_.plot( HDI, [0,0],lw=5.0, color='k')
         
@@ -264,11 +269,8 @@ class Compare:
                   horizontalalignment='center',
                   verticalalignment='bottom',
                   )
-        
-        #plt.tight_layout(pad=1, w_pad=1, h_pad=1.0)
-        #st.set_y(0.95)
-        #fig.subplots_adjust(top=0.85)        
-        #plt.show()
+
+
 
     #-------------------------------
     def plot_qq(s,ax_=None):
@@ -316,11 +318,11 @@ class Compare:
         cohens_d = (s.X.mean() - s.Y.mean()) / np.sqrt(pooled_var)
 
         if print_:
-            print(s.x_label + ' ave: ', s.X.mean())
-            print(s.y_label + ' ave: ', s.Y.mean())
             print('t-test p_value: ',t_test_p)
             print('mw-test p_value: ',mw_p)
             print('Cohens d: ', cohens_d)        
+            print(s.x_label + ' ave: ', s.X.mean())
+            print(s.y_label + ' ave: ', s.Y.mean())
         
         if fig_:
             fig_.text( .6, .4, s.x_label +' mean: ' + '%.3g'%s.X.mean(),
