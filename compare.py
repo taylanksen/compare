@@ -349,6 +349,24 @@ class Compare:
 
         return s.X.mean(), s.Y.mean(), t_test_p, mw_p, cohens_d
 
+    def bootstrap_mean(s, samples_=10000):
+        mean_diffs = np.zeros(samples_)
+        for i in range(samples_):
+            sample_X = np.random.choice(s.X,len(s.X))
+            sample_Y = np.random.choice(s.X,len(s.X))
+            mean_diffs[i] = sample_X.mean() - sample_Y.mean()
+        
+        plt.figure()
+        plt.subplot(211)
+        plt.hist(mean_diffs, bins=15)
+        
+        
+        plt.subplot(212)
+        gkde = stats.gaussian_kde(mean_diffs)
+        x_range = np.linspace(np.min(mean_diffs), np.max(mean_diffs), 200)
+        plt.plot(x_range,gkde(x_range))
+        plt.show()
+        
     #-------------------------------
     def page_plot(s):
         f = plt.figure(figsize=(8,10.5),facecolor='white')
@@ -368,12 +386,14 @@ def example():
     '''
     compare.plot_qq()
     compare.plot_t_likelihood()
-    '''
+    
     stats = compare.calc_stats(print_=True)
     f = compare.plot_all()
     #plt.savefig(compare.label + '_plot.png',dpi=70)
     f.savefig(compare.label + '_plot.png',dpi=70)
     plt.show()
+    '''
+    compare.bootstrap_mean()
 
 #=============================================================================
 if __name__ == '__main__':
