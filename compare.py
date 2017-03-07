@@ -21,6 +21,7 @@ from enum import Enum
 import unittest
 import logging
 import scipy.stats as stats
+import sys # for flush
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -71,7 +72,7 @@ class Compare:
         
         ax1 = fig.add_subplot(621)
         
-        #histogram - pooled
+        #HISTOGRAM - pooled
         n_C, bins_C, patches_C = plt.hist(C, bins=BINS_N, normed=1, facecolor='gray', alpha=0.75)
         
         # 'best fit' line
@@ -98,9 +99,11 @@ class Compare:
         y = stats.norm.pdf(bins_C, mu_A, sigma_A)
         l = plt.plot(bins_C, y, 'r--', linewidth=2, label='norm fit')
         
-        plt.title(s.x_label + ' ' + s.label + ' Histogram')
+        #plt.title(s.x_label + ' ' + s.label + ' Histogram')
+        #plt.title(s.x_label + ' Witnesses')
+        plt.title(s.x_label)
         plt.ylabel('frequency')
-        plt.xlabel(s.label + ' value')
+        plt.xlabel(s.label + ' feature value')
         plt.legend()
         
         #---------------------
@@ -113,9 +116,11 @@ class Compare:
         y = stats.norm.pdf(bins_C, mu_B, sigma_B)
         l = plt.plot(bins_C, y, 'r--', linewidth=2, label='norm fit')
         
-        plt.title(s.y_label + ' ' + s.label + ' Histogram')
+        #plt.title(s.y_label + ' ' + s.label + ' Histogram')
+        #plt.title(s.y_label + ' Witnesses')
+        plt.title(s.y_label)
         plt.ylabel('frequency')
-        plt.xlabel(s.label + ' value')
+        plt.xlabel(s.label + ' feature value')
         plt.legend()
         
         #---------------------
@@ -123,7 +128,8 @@ class Compare:
         plt.subplot(6,2,7)
         plt.boxplot([B,A], 0, 'rs', 0)
         plt.yticks([1, 2], [s.y_label, s.x_label])
-        plt.title('Boxplot of ' + s.label )
+        #plt.title('Boxplot of ' + s.label )
+        plt.title('Boxplot of ' + s.label + ' feature level')
         plt.xlabel(s.label + ' value')
         plt.grid(b=True)
         
@@ -147,7 +153,7 @@ class Compare:
         ax6 = fig.add_subplot(6,2,6)
         s.plot_t_likelihood(ax2, ax4, ax6)
         
-        s.calc_stats('fname',fig)
+        s.calc_stats(False,fig)
         
         plt.tight_layout(pad=1, w_pad=1, h_pad=1.0)
         st.set_y(0.95)
@@ -190,6 +196,7 @@ class Compare:
         ax1_.grid(1)
         
         # add the HDI
+        '''
         HDI_low = stats.t.ppf(.025, loc=(mu_diff), scale=np.sqrt(sigma_diff), df=df_diff)
         HDI_high = stats.t.ppf(.975, loc=(mu_diff), scale=np.sqrt(sigma_diff), df=df_diff)
         HDI = [HDI_low, HDI_high]
@@ -207,7 +214,7 @@ class Compare:
                   horizontalalignment='center',
                   verticalalignment='bottom',
                   )
-        
+        '''
         
         #---------------
         # PLOT A
@@ -223,6 +230,7 @@ class Compare:
         ax2_.grid(1)
         
         # add the HDI
+        '''
         HDI_low = stats.t.ppf(.025, loc=A.mean(), scale=np.sqrt(sigma_mus_A), df=len(A)-1)
         HDI_high = stats.t.ppf(.975, loc=A.mean(), scale=np.sqrt(sigma_mus_A), df=len(A)-1)
         HDI = [HDI_low, HDI_high]
@@ -240,7 +248,7 @@ class Compare:
                   horizontalalignment='center',
                   verticalalignment='bottom',
                   )
-
+        '''
         #-------
         
         #PLOT B
@@ -251,6 +259,7 @@ class Compare:
         ax3_.set_xlabel('mu')
         ax3_.grid(1)
         
+        '''
         # add the HDI
         HDI_low = stats.t.ppf(.025, loc=B.mean(), scale=np.sqrt(sigma_mus_B),df=len(B)-1)
         HDI_high = stats.t.ppf(.975, loc=B.mean(), scale=np.sqrt(sigma_mus_B),df=len(B)-1)
@@ -269,7 +278,7 @@ class Compare:
                   horizontalalignment='center',
                   verticalalignment='bottom',
                   )
-
+        '''
 
 
     #-------------------------------
@@ -318,11 +327,14 @@ class Compare:
         cohens_d = (s.X.mean() - s.Y.mean()) / np.sqrt(pooled_var)
 
         if print_:
-            print('t-test p_value: ',t_test_p)
-            print('mw-test p_value: ',mw_p)
-            print('Cohens d: ', cohens_d)        
-            print(s.x_label + ' ave: ', s.X.mean())
-            print(s.y_label + ' ave: ', s.Y.mean())
+            print('t-test p_value: ','{:.4f}'.format(t_test_p))
+            print('mw-test p_value: ','{:.4f}'.format(mw_p))
+            print('Cohens d: ', '{:.2f}'.format(cohens_d))        
+            print(s.x_label + ' ave: ', '{:.2f}'.format(s.X.mean()))
+            print(s.y_label + ' ave: ', '{:.2f}'.format(s.Y.mean()))
+            print(s.x_label + ' var: ', '{:.2f}'.format(s.X.var()))
+            print(s.y_label + ' var: ', '{:.2f}'.format(s.Y.var()))
+            sys.stdout.flush()
         
         if fig_:
             fig_.text( .6, .4, s.x_label +' mean: ' + '%.3g'%s.X.mean(),
@@ -349,27 +361,49 @@ class Compare:
 
         return s.X.mean(), s.Y.mean(), t_test_p, mw_p, cohens_d
 
-    def bootstrap_mean(s, samples_=10000):
+    #-------------------------------
+    def bootstrap_mean(s, print_=False, samples_=10000):
+        fig = plt.figure(figsize=(5,5))
         mean_diffs = np.zeros(samples_)
+        pooled = np.concatenate((s.X,s.Y))        
         for i in range(samples_):
-            sample_X = np.random.choice(s.X,len(s.X))
-            sample_Y = np.random.choice(s.X,len(s.X))
+            sample_X = np.random.choice(pooled,len(s.X))
+            sample_Y = np.random.choice(pooled,len(s.Y))
+
+        #    sample_X = np.random.choice(s.X,len(s.X))
+        #    sample_Y = np.random.choice(s.Y,len(s.Y))
             mean_diffs[i] = sample_X.mean() - sample_Y.mean()
         
-        plt.figure()
-        plt.subplot(211)
-        plt.hist(mean_diffs, bins=15)
+        p = sum(mean_diffs > 0) / samples_
+        if(print_):
+            print('Bootstrap mean diff p=',p)
+            sys.stdout.flush()
+
+        #plt.figure()
+        #plt.subplot(211)
+        #plt.hist(mean_diffs, bins=15)
         
-        
-        plt.subplot(212)
+        #plt.subplot(212)
         gkde = stats.gaussian_kde(mean_diffs)
         x_range = np.linspace(np.min(mean_diffs), np.max(mean_diffs), 200)
         plt.plot(x_range,gkde(x_range))
+        plt.grid()
+        plt.xlabel(s.label + ': (' + s.x_label + ' mean - '+ s.y_label + ' mean)')
+        plt.ylabel('frequency')
+        plt.title('Bootstrap distribution of difference in means')
+
+        #plt.text( 0.07, 0.07, 'P($\Delta$>0): ' + '%.3g'%p,
+        #               horizontalalignment='right',
+        #               verticalalignment='top',
+        #               )
+
         plt.show()
+
+        return p, fig
         
     #-------------------------------
     def page_plot(s):
-        f = plt.figure(figsize=(8,10.5),facecolor='white')
+        f = plt.figure(figsize=(3,3),facecolor='white')
         ax1 = f.add_subplot(6,2,1,axisbg='none')
         
     
