@@ -312,7 +312,20 @@ class Compare:
         slope, intercept = np.linalg.lstsq(A_mat, sort_B[:n_min])[0]
         ax.plot(sort_A,sort_A*slope + intercept, 'r', linewidth=1)
   
-    
+    def print_stats(s,my_stats):
+        X_mean, Y_mean, t_test_p, mw_p, cohens_d = my_stats 
+        print('-----------------------------------------------')
+        print(s.label)
+        print('----------')
+        print('t-test p_value: ','{:.4f}'.format(t_test_p))
+        print('mw-test p_value: ','{:.4f}'.format(mw_p))
+        print('Cohens d: ', '{:.2f}'.format(cohens_d))        
+        print(s.x_label + ' ave: ', '{:.2f}'.format(X_mean))
+        print(s.y_label + ' ave: ', '{:.2f}'.format(Y_mean))
+        print(s.x_label + ' var: ', '{:.2f}'.format(s.X.var()))
+        print(s.y_label + ' var: ', '{:.2f}'.format(s.Y.var()))
+        sys.stdout.flush()
+        
     #-------------------------------
     def calc_stats(s, print_=False, fig_=None):
         """ returns averages, t-test_p, Mann-Whitney test_p, Cohens_d """
@@ -326,15 +339,9 @@ class Compare:
         pooled_var = (len(s.X)*x_var + len(s.Y)*y_var) / n_tot
         cohens_d = (s.X.mean() - s.Y.mean()) / np.sqrt(pooled_var)
 
+        my_stats = s.X.mean(), s.Y.mean(), t_test_p, mw_p, cohens_d
         if print_:
-            print('t-test p_value: ','{:.4f}'.format(t_test_p))
-            print('mw-test p_value: ','{:.4f}'.format(mw_p))
-            print('Cohens d: ', '{:.2f}'.format(cohens_d))        
-            print(s.x_label + ' ave: ', '{:.2f}'.format(s.X.mean()))
-            print(s.y_label + ' ave: ', '{:.2f}'.format(s.Y.mean()))
-            print(s.x_label + ' var: ', '{:.2f}'.format(s.X.var()))
-            print(s.y_label + ' var: ', '{:.2f}'.format(s.Y.var()))
-            sys.stdout.flush()
+            s.print_stats(stats)
         
         if fig_:
             fig_.text( .6, .4, s.x_label +' mean: ' + '%.3g'%s.X.mean(),
@@ -359,7 +366,7 @@ class Compare:
                        )
         
 
-        return s.X.mean(), s.Y.mean(), t_test_p, mw_p, cohens_d
+        return my_stats
 
     #-------------------------------
     def bootstrap_mean(s, print_=False, samples_=10000):
