@@ -34,13 +34,15 @@ If you want to set the logging level from a command-line option such as:
 class Compare:
     """   class for running a set of statistical comaparative tests and creating 
     plots on two groups of data
-    Tries to "intelligently" handle regions of nan.    
+    Removes nans prior to computing.    
     """
     
     #-------------------------------
     def __init__(s, X_, Y_, label_='data', x_label_='X', y_label_='Y'):
         s.X = np.array(X_)
         s.Y = np.array(Y_)
+        s.X = s.X[~np.isnan(s.X)]
+        s.Y = s.Y[~np.isnan(s.Y)]
         s.x_label = x_label_
         s.y_label = y_label_
         s.label = label_
@@ -331,17 +333,24 @@ class Compare:
         """ returns averages, t-test_p, Mann-Whitney test_p, Cohens_d """
         
         t,t_test_p = stats.ttest_ind(s.X, s.Y, axis=0, equal_var=False)
-        mw,mw_p = stats.mannwhitneyu(s.X, s.Y)
-        
+        try:
+            mw,mw_p = stats.mannwhitneyu(s.X, s.Y)
+        except ValueError:
+            #print('MWW ValueError')
+            mw_p = np.inf
+            
         n_tot = len(s.X) + len(s.Y)
         x_var = s.X.var(ddof=0)
         y_var = s.Y.var(ddof=0)
         pooled_var = (len(s.X)*x_var + len(s.Y)*y_var) / n_tot
-        cohens_d = (s.X.mean() - s.Y.mean()) / np.sqrt(pooled_var)
-
+        if(pooled_var ==0):
+            cohens_d = np.nan
+        else:
+            cohens_d = (s.X.mean() - s.Y.mean()) / np.sqrt(pooled_var)
+            
         my_stats = s.X.mean(), s.Y.mean(), t_test_p, mw_p, cohens_d
         if print_:
-            s.print_stats(stats)
+            s.print_stats(my_stats)
         
         if fig_:
             fig_.text( .6, .4, s.x_label +' mean: ' + '%.3g'%s.X.mean(),
@@ -434,7 +443,8 @@ def example():
     f.savefig(compare.label + '_plot.png',dpi=70)
     plt.show()
     '''
-    compare.bootstrap_mean()
+    stats = compare.calc_stats(print_=True)
+    #compare.bootstrap_mean()
 
 #=============================================================================
 if __name__ == '__main__':
