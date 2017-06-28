@@ -328,20 +328,26 @@ class Compare:
         
     #-------------------------------
     def calc_stats(s, print_=False, fig_=None):
-        """ returns averages, t-test_p, Mann-Whitney test_p, Cohens_d """
+        """ returns: X.mean,
+                     Y.mean,
+                     t-test_p, 
+                     Mann-Whitney test_p, 
+                     Cohens_d """
         
         t,t_test_p = stats.ttest_ind(s.X, s.Y, axis=0, equal_var=False)
-        mw,mw_p = stats.mannwhitneyu(s.X, s.Y)
-        
+        try:
+            mw,mw_p = stats.mannwhitneyu(s.X, s.Y)
+        except ValueError:
+            mw,mw_p = np.NAN,np.NAN
         n_tot = len(s.X) + len(s.Y)
         x_var = s.X.var(ddof=0)
         y_var = s.Y.var(ddof=0)
         pooled_var = (len(s.X)*x_var + len(s.Y)*y_var) / n_tot
-        cohens_d = (s.X.mean() - s.Y.mean()) / np.sqrt(pooled_var)
+        cohens_d = (s.Y.mean() - s.X.mean()) / np.sqrt(pooled_var)
 
         my_stats = s.X.mean(), s.Y.mean(), t_test_p, mw_p, cohens_d
         if print_:
-            s.print_stats(stats)
+            s.print_stats(my_stats)
         
         if fig_:
             fig_.text( .6, .4, s.x_label +' mean: ' + '%.3g'%s.X.mean(),
