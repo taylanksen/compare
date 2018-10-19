@@ -338,7 +338,7 @@ class Compare:
         
         t,t_test_p = stats.ttest_ind(s.X, s.Y, axis=0, equal_var=False)
         try:
-            mw,mw_p = stats.mannwhitneyu(s.X, s.Y)
+            mw,mw_p = stats.mannwhitneyu(s.X, s.Y, alternative='two-sided')
         except ValueError:
             mw,mw_p = np.NAN,np.NAN
 
@@ -428,6 +428,79 @@ class Compare:
         ax1 = f.add_subplot(6,2,1,axisbg='none')
         
     
+class Compare2(Compare):
+    """ Cliff's d effect size added while being backward compatible. """
+    
+    def print_stats(s,my_stats):
+        X_mean, Y_mean, t_test_p, mw_p, cohens_d, cliffs_d = my_stats 
+        print('-----------------------------------------------')
+        print(s.label)
+        print('----------')
+        print('t-test p_value: ','{:.4f}'.format(t_test_p))
+        print('mw-test p_value: ','{:.4f}'.format(mw_p))
+        print('Cohens d: ', '{:.2f}'.format(cohens_d))        
+        print('Cliffs d: ', '{:.2f}'.format(cliffs_d))        
+        print(s.x_label + ' ave: ', '{:.2f}'.format(X_mean))
+        print(s.y_label + ' ave: ', '{:.2f}'.format(Y_mean))
+        print(s.x_label + ' var: ', '{:.2f}'.format(s.X.var()))
+        print(s.y_label + ' var: ', '{:.2f}'.format(s.Y.var()))
+        sys.stdout.flush()
+    
+        
+    def calc_stats(s, print_=False, fig_=None):
+        """ returns: X.mean,
+                     Y.mean,
+                     t-test_p, 
+                     Mann-Whitney test_p, 
+                     Cohens_d """
+        
+        t,t_test_p = stats.ttest_ind(s.X, s.Y, axis=0, equal_var=False)
+        try:
+            mw,mw_p = stats.mannwhitneyu(s.X, s.Y)
+        except ValueError:
+            mw,mw_p = np.NAN,np.NAN
+
+        n_tot = len(s.X) + len(s.Y)
+        x_var = s.X.var(ddof=0)
+        y_var = s.Y.var(ddof=0)
+        pooled_var = (len(s.X)*x_var + len(s.Y)*y_var) / n_tot
+        
+        if(pooled_var ==0):
+            cohens_d = np.nan
+        else:
+            cohens_d = (s.Y.mean() - s.X.mean()) / np.sqrt(pooled_var)
+        
+        cliffs_d = 2*mw/(len(s.X) * len(s.Y)) - 1
+
+        my_stats = s.X.mean(), s.Y.mean(), t_test_p, mw_p, cohens_d, cliffs_d
+        if print_:
+            s.print_stats(my_stats)
+        
+        if fig_:
+            fig_.text( .6, .4, s.x_label +' mean: ' + '%.3g'%s.X.mean(),
+                       horizontalalignment='left',
+                       verticalalignment='bottom',
+                       )
+            fig_.text( .6, .375, s.y_label + ' mean: ' + '%.3g'%s.Y.mean(),
+                       horizontalalignment='left',
+                       verticalalignment='bottom',
+                       )
+            fig_.text( .6, .35, 't-test p: ' + '%.3g'%t_test_p,
+                       horizontalalignment='left',
+                       verticalalignment='bottom',
+                       )
+            fig_.text( .6, .325, 'mw-test p: ' + '%.3g'%mw_p,
+                       horizontalalignment='left',
+                       verticalalignment='bottom',
+                       )
+            fig_.text( .6, .3, 'Cohens d: ' + '%.3g'%cohens_d,
+                       horizontalalignment='left',
+                       verticalalignment='bottom',
+                       )
+        
+
+        return my_stats        
+    
 #------------------------------------------------------------------------
 def example():
     """
@@ -449,9 +522,33 @@ def example():
     plt.show()
     '''
     stats = compare.calc_stats(print_=True)
+    
     #compare.bootstrap_mean()
-
+#------------------------------------------------------------------------
+def example2():
+    """
+    same sa example one but includes cliff's d
+    
+    """
+    np.random.seed(7)
+    # generate two different normal samples
+    A = np.random.normal(loc=0.75, scale=1.5, size=50)
+    B = np.random.normal(loc=0.0, scale=1.0, size=50)   
+    compare = Compare2(A,B, label_='smile', x_label_='TRUTH', y_label_='BLUFF')
+    '''
+    compare.plot_qq()
+    compare.plot_t_likelihood()
+    
+    stats = compare.calc_stats(print_=True)
+    f = compare.plot_all()
+    #plt.savefig(compare.label + '_plot.png',dpi=70)
+    f.savefig(compare.label + '_plot.png',dpi=70)
+    plt.show()
+    '''
+    stats = compare.calc_stats(print_=True)
+    
+    #compare.bootstrap_mean()
 #=============================================================================
 if __name__ == '__main__':
     print('running main')
-    example()
+    example2()
